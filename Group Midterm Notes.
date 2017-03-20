@@ -1,0 +1,120 @@
+Courtesy of M.Lambert
+
+Visualizations
+Visualize all variables
+
+sns.pairplot(admissions, hue='admit', size=3) plt.tight_layout() plt.show()
+
+Linear Regression
+
+lm = linear_model.LinearRegression()
+
+define y target = 'psoda' y = fast_food[target] print type(y)
+
+define x X = fast_food[['prpblck', 'income']] print type(X)
+
+run regression model = lm.fit(X, y)
+Predict your y, call them predictions, print the shape of predictions
+Print the shape of predictions
+
+predictions = lm.predict(X) predictions.shape
+
+compare means print fast_food['psoda'].mean() print predictions.mean()
+
+finding r-squared score_r2 = model.score(X, y) score_r2
+
+Estimates model.coef lm.intercept
+
+using stats models: import statsmodels.formula.api as smf lm = smf.ols(formula='psoda ~ prpblck + income', data=fast_food).fit() lm.params lm.summary()
+
+visualization fig = plt.figure(figsize=(10,6)) sns.regplot(fast_food['prpblck'], fast_food['psoda'], data=fast_food) plt.show()
+
+correlation matrix cor_var = ['prppov', 'lincome'] fast_food[cor_var].corr()
+
+Prediction
+
+Standardizing your x Variables: from sklearn.preprocessing import StandardScaler ss = StandardScaler() Xn = ss.fit_transform(X)
+
+Split Train and Test:
+
+from sklearn.cross_validation import train_test_split X_train, X_test, y_train, y_test = train_test_split(Xn, y, test_size=0.3, random_state=10) print X_train.shape, X_test.shape print "\n======\n" print y_train.shape, y_test.shape
+
+Linear Regression with sklearn: from sklearn.linear_model import LinearRegression
+
+lr = LinearRegression() lr.fit(X_train, y_train)
+
+Compare test and train: def rsquare_meansquare_error(train_y, test_y, train_X, test_X, test, best_model): """ first we need to predict on the test and train data""" y_train_pred = best_model.predict(train_X) y_test_pred = best_model.predict(test_X)
+
+""" We call the MSE in the following lines""" print ('MSE ' + test + ' train data: %.2f, test data: %.2f' % ( mean_squared_error(train_y, y_train_pred), mean_squared_error(test_y, y_test_pred)))
+
+""" We call the R^2 in the following lines""" print('R^2 ' + test + ' train data: %.2f, test data: %.2f' % ( r2_score(train_y, y_train_pred), r2_score(test_y, y_test_pred)))
+
+Basic OLS prediction: rsquare_meansquare_error(y_train, y_test, X_train, X_test, "OLS", lr)
+
+Ridge Regression:
+
+Find Alpha:
+
+from sklearn.linear_model import Ridge, Lasso, ElasticNet, RidgeCV, LassoCV, ElasticNetCV ridge_alphas = np.logspace(0, 5, 100) optimal_ridge = RidgeCV(alphas=ridge_alphas, cv=10) optimal_ridge.fit(X_train, y_train) print (optimalridge.alpha)
+
+Calculate Ridge and Fit Train/Test: ridge = Ridge(alpha=optimalridge.alpha) ridge.fit(X_train, y_train)
+
+Evaluate Ridge: rsquare_meansquare_error(y_train, y_test, X_train, X_test, "Ridge", ridge)
+
+Compare the r^2 and MSE of train and test to see how the estimation did
+
+Lasso: Optimal Alpha: optimal_lasso = LassoCV(n_alphas=300, cv=10, verbose=1) optimal_lasso.fit(X_train, y_train) print optimallasso.alpha
+
+Implement, Fit, and Evaluate Regression1:
+
+lasso = Lasso(alpha=optimallasso.alpha) lasso.fit(X_train, y_train) rsquare_meansquare_error(y_train, y_test, X_train, X_test, "Lasso", lasso)
+
+Elastic Net Regression: Optimal Alpha: l1_ratios = np.linspace(0.01, 1.0, 50) optimal_enet = ElasticNetCV(l1_ratio=l1_ratios, n_alphas=300, cv=5, verbose=1) optimal_enet.fit(X_train, y_train) print optimalenet.alpha print optimal_enet.l1ratio
+
+Create, Fit, and Evaluate: enet = ElasticNet(alpha=optimalenet.alpha, l1_ratio=optimal_enet.l1ratio) enet.fit(X_train, y_train) rsquare_meansquare_error(y_train, y_test, X_train, X_test, "Elastic Net", enet)
+
+Regression Tree: from sklearn.tree import DecisionTreeRegressor dtr = DecisionTreeRegressor()
+
+GridSearch: params = {"max_depth": [3,5,10,20], "max_features": [None, "auto"], "min_samples_leaf": [1, 3, 5, 7, 10], "min_samples_split": [2, 5, 7], "criterion" : ['mse'] } Cross Validate: from sklearn.grid_search import GridSearchCV dtr_gs = GridSearchCV(dtr, params, n_jobs=-1, cv=5, verbose=1)
+
+fit Tree: from sklearn.grid_search import GridSearchCV dtr_gs = GridSearchCV(dtr, params, n_jobs=-1, cv=5, verbose=1)
+
+Best Estimate: ''' dtr_best = is the regression tree regressor with best parameters/estimators''' dtr_best = dtr_gs.bestestimator
+
+print "best estimator", dtr_best print "\n==========\n" print "best parameters", dtr_gs.bestparams print "\n==========\n" print "best score", dtr_gs.bestscore
+
+Find X's that best explain y: def feature_importance(X, best_model): feature_importance = pd.DataFrame({'feature':X.columns, 'importance':best_model.featureimportances}) feature_importance.sort_values('importance', ascending=False, inplace=True) return feature_importance
+feature_importance(X, dtr_best)
+
+Predict and Evaluate: y_pred_dtr= dtr_best.predict(X_test) y_pred_dtr
+
+rsquare_meansquare_error(y_train, y_test, X_train, X_test, "Regression tree", dtr_best)
+
+Visualize the Tree: from sklearn.externals.six import StringIO
+from IPython.display import Image
+from sklearn.tree import export_graphviz import pydotplus import pydot
+
+dot_data = StringIO() ''' dtr_best was previously defined'''
+
+export_graphviz(dtr_best, out_file=dot_data,
+filled=True, rounded=True, special_characters=True, feature_names=X.columns)
+
+graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
+Image(graph.create_png())
+
+Random Forest: Grid Search: from sklearn.ensemble import RandomForestRegressor forest = RandomForestRegressor( )
+
+params = {'max_depth':[3,4,5],
+'max_leaf_nodes':[5,6,7], 'min_samples_split':[3,4], 'n_estimators': [100] }
+
+estimator_rfr = GridSearchCV(forest, params, n_jobs=-1, cv=5,verbose=1)
+
+Fit and Estimate Forest: estimator_rfr.fit(X_train, y_train)
+
+''' rfr_best = is the random forest regression tree regressor with best parameters/estimators''' rfr_best = estimator_rfr.bestestimator print "best estimator", rfr_best print "\n==========\n" print "best parameters", estimator_rfr.bestparams print "\n==========\n" print "best score", estimator_rfr.bestscore
+
+See Most Important Variables: feature_importance(X, rfr_best)
+
+Predict: y_pred_rfdtr= rfr_best.predict(X_test) y_pred_rfdtr
+
+Evaluate: rsquare_meansquare_error(y_train, y_test, X_train, X_test, "Random Forest Regression tree", rfr_best)
